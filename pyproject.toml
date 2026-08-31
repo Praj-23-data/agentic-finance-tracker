@@ -1,0 +1,20 @@
+[project]
+name = "finance-agents"
+version = "0.1.0"
+description = "AI agents to record and handle finances via Gmail + Google Sheets"
+authors = [{ name = "Prajwal" }]
+readme = "README.md"
+requires-python = ">=3.9"
+
+dependencies = [
+    "google-api-python-client",
+    "google-auth>=2.50.0",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
+    "gspread",
+    "oauth2client",
+    "python-dateutil",
+]
+
+[tool.uv]
+# uv specific settings (optional)
