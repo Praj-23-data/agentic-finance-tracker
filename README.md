@@ -21,6 +21,7 @@ An AI-powered finance automation tool that automatically extracts payment notifi
 ✅ **Monthly Organization** - Automatically creates separate sheets for each month  
 ✅ **Duplicate Prevention** - Timestamp-based tracking to avoid duplicate entries  
 ✅ **Source Tracking** - Identifies bank type and credit card transactions  
+✅ **Manual Expense Bucketing** - Adds a dropdown for selecting a bucket per transaction
 ✅ **Cloud Storage** - All data synced to Google Sheets in real-time  
 ✅ **Timezone Awareness** - Proper handling of timestamps and timezones  
 
@@ -61,7 +62,6 @@ python --version
 - Gmail inbox with payment notifications
 - Google Drive access for creating sheets
 
-### 3. **Required Python Packages**
 ```bash
 pip install -r requirements.txt
 ```
@@ -74,10 +74,10 @@ pip install -r requirements.txt
 - `python-dateutil` - Date parsing
 
 ---
-
+4. ✅ Adds each transaction with a manual bucket dropdown
+5. ✅ Appends transactions with Date, Time, Amount, Merchant, Source, Bucket
 ## 🔧 Setup Instructions
 
-### Step 1: Create a Google Cloud Project
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Click **"Select a Project"** → **"New Project"**
@@ -101,7 +101,6 @@ pip install -r requirements.txt
 
 #### Enable Google Drive API:
 1. Go to [APIs & Services](https://console.cloud.google.com/apis/dashboard)
-2. Click **"+ ENABLE APIS AND SERVICES"**
 3. Search for **"Google Drive API"**
 4. Click it and press **"ENABLE"**
 
@@ -125,7 +124,6 @@ pip install -r requirements.txt
 
 1. Go to [Google Sheets](https://sheets.google.com/)
 2. Click **"+ New"** → **"Blank spreadsheet"**
-3. Name it: `Finance Tracker`
 4. Copy the Sheet ID from the URL:
    ```
    https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit
@@ -166,19 +164,17 @@ python workflow.py
 - Accept the permissions (reads Gmail only, no write access)
 - A browser window will open for Sheets authorization
 - Accept the permissions
-- Tokens are saved to `data/token.json` and `data/sheets_token.json`
 
 ### Subsequent Runs
 ```bash
 python workflow.py
 ```
-
 **What happens:**
 1. ✅ Fetches payment emails from the last sync timestamp
 2. ✅ Parses transaction details
 3. ✅ Creates/updates monthly sheets
-4. ✅ Appends transactions with Date, Time, Amount, Merchant, Source
-5. ✅ Updates metadata with latest sync timestamp
+4. ✅ Adds each transaction with `Please select bucket` in the Bucket dropdown
+5. ✅ Appends transactions with Date, Time, Amount, Merchant, Source, Bucket
 
 ### Output Example
 ```
@@ -219,6 +215,17 @@ one_month_ago = datetime.now(tz=timezone.utc) - timedelta(days=30)
 # Change 30 to your preferred number of days
 ```
 
+### Expense Buckets
+Bucket options are maintained in [src/buckets.py](src/buckets.py). Add a name to
+`BUCKET_OPTIONS` to make it available in the Google Sheets dropdown. New rows
+start with `Please select bucket`; choose `Rent`, `Petrol`, `DailyExpenses`, or
+`Beta` manually for each transaction.
+
+Run the business logic tests with:
+```bash
+python -m unittest discover -s tests -v
+```
+
 ---
 
 ## 📁 Project Structure
@@ -228,10 +235,14 @@ finance-tracker-agent/
 ├── src/
 │   ├── __init__.py
 │   ├── gmail_agent.py       # Gmail API operations
+│   ├── buckets.py           # User-editable bucket rules
+│   ├── bucket_agent.py      # Optional legacy merchant classification helper
 │   ├── sheets_agent.py      # Google Sheets operations
 │   ├── parser.py            # Transaction parsing logic
 │   ├── utils.py             # Utility functions
 │   └── workflow.py          # Main orchestration (ENTRY POINT)
+├── tests/
+│   └── test_bucket_agent.py # Bucket business logic tests
 ├── config/
 │   ├── credentials.json     # OAuth credentials (⚠️ DO NOT COMMIT)
 │   └── sheets.json          # (Optional) Sheets config
@@ -257,14 +268,15 @@ graph TD
     E --> F
     F --> G["Extract Email Details<br/>From, Date, Body"]
     G --> H["Parse Transactions<br/>Date, Amount, Merchant,<br/>Time, Source"]
-    H --> I["Group by Month<br/>August 2026, Sept 2026, etc"]
-    I --> J["Create/Get Month Sheet"]
-    J --> K["Append Transaction Rows"]
-    K --> L["Update Metadata Sheet<br/>with Latest Timestamp"]
-    L --> M["✅ Sync Complete"]
+   H --> I["Add Manual Bucket<br/>Selection"]
+   I --> J["Group by Month<br/>August 2026, Sept 2026, etc"]
+   J --> K["Create/Get Month Sheet"]
+   K --> L["Append Rows with Bucket Dropdown"]
+   L --> M["Update Metadata Sheet<br/>with Latest Timestamp"]
+   M --> N["✅ Sync Complete"]
     
     style A fill:#90EE90
-    style M fill:#90EE90
+   style N fill:#90EE90
     style F fill:#87CEEB
     style K fill:#FFB6C1
 ```
@@ -276,11 +288,12 @@ graph TD
 3. **Query Gmail** - Fetch payment alert emails after the timestamp
 4. **Extract Headers** - Get sender, date, and email body
 5. **Parse** - Extract structured data (date, amount, merchant, time, source)
-6. **Group** - Organize transactions by month
-7. **Create Sheets** - Dynamically create sheets per month if needed
-8. **Append Data** - Batch insert all transactions to respective sheets
-9. **Update Metadata** - Store the latest timestamp to prevent duplicates
-10. **Complete** - Next run will only fetch new emails
+6. **Select Bucket** - Choose a bucket manually in the Bucket dropdown
+7. **Group** - Organize transactions by month
+8. **Create Sheets** - Dynamically create sheets per month if needed
+9. **Append Data** - Batch insert all transactions to respective sheets
+10. **Update Metadata** - Store the latest timestamp to prevent duplicates
+11. **Complete** - Next run will only fetch new emails
 
 ---
 
