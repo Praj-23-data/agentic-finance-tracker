@@ -5,6 +5,7 @@ from src.buckets import BUCKET_OPTIONS, BUCKET_PLACEHOLDER
 from src.sheets_agent import (
     BUCKET_VALIDATION_RANGE,
     append_transactions_to_month_sheet,
+    get_transactions_from_spreadsheet,
 )
 
 
@@ -25,13 +26,15 @@ class SheetBucketTests(unittest.TestCase):
         append_transactions_to_month_sheet(
             spreadsheet,
             "September 2026",
-            [{
-                "date": "13-09-2026",
-                "time": "10:30",
-                "amount": 100.0,
-                "merchant": "Test Merchant",
-                "source": "Test Bank",
-            }],
+            [
+                {
+                    "date": "13-09-2026",
+                    "time": "10:30",
+                    "amount": 100.0,
+                    "merchant": "Test Merchant",
+                    "source": "Test Bank",
+                }
+            ],
         )
 
         worksheet.resize.assert_called_once_with(cols=6)
@@ -80,6 +83,42 @@ class SheetBucketTests(unittest.TestCase):
                 ]
             ]
         )
+
+
+class SheetReadTests(unittest.TestCase):
+    def test_reads_transactions_from_month_sheets_and_skips_metadata(self):
+        spreadsheet = Mock()
+        january = Mock(title="January 2026")
+        january.get_all_records.return_value = [
+            {"Date": "01-01-2026", "Amount": 100, "Merchant": "Store"}
+        ]
+        metadata = Mock(title="_Metadata")
+        spreadsheet.worksheets.return_value = [january, metadata]
+
+        transactions = get_transactions_from_spreadsheet(spreadsheet)
+
+        self.assertEqual(
+            transactions,
+            [
+                {
+                    "Month": "January 2026",
+                    "Date": "01-01-2026",
+                    "Amount": 100,
+                    "Merchant": "Store",
+                }
+            ],
+        )
+        metadata.get_all_records.assert_not_called()
+
+    def test_worksheet_name_wins_over_a_month_column_in_source_data(self):
+        spreadsheet = Mock()
+        worksheet = Mock(title="February 2026")
+        worksheet.get_all_records.return_value = [{"Month": "wrong", "Amount": 50}]
+        spreadsheet.worksheets.return_value = [worksheet]
+
+        transactions = get_transactions_from_spreadsheet(spreadsheet)
+
+        self.assertEqual(transactions[0]["Month"], "February 2026")
 
 
 if __name__ == "__main__":

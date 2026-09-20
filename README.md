@@ -194,6 +194,27 @@ Updated sync timestamp to: 1693584542
 ✓ Workflow completed successfully!
 ```
 
+### Start the Streamlit app
+From the project root:
+```bash
+streamlit run streamlit_app.py
+```
+
+The app reads transactions from each month worksheet and displays them in one
+table with month and bucket filters, transaction count, and total amount. Data
+is cached for 60 seconds; use **Refresh data** after changing the sheet. Set
+`GOOGLE_SHEET_ID` to use a different spreadsheet; otherwise it uses the sheet
+configured by the current workflow.
+
+### Recommended next logic
+
+1. Add a stable transaction ID and deduplicate imported Gmail messages.
+2. Normalize dates, amounts, currencies, and merchants before writing rows.
+3. Add a review state for unknown merchants and missing buckets.
+4. Add monthly summaries by bucket and source, with budget thresholds.
+5. Move the sheet ID and OAuth paths into environment-based configuration.
+6. Add parser regression fixtures for every bank email format encountered.
+
 ---
 
 ## ⚙️ Configuration
