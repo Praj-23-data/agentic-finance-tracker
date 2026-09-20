@@ -14,6 +14,7 @@ dependencies = [
     "gspread",
     "oauth2client",
     "python-dateutil",
+    "streamlit",
 ]
 
 [tool.uv]
